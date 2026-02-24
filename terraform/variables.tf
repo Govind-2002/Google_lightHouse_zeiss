@@ -37,3 +37,8 @@ variable "tags" {
     error_message = "tags must include SbxResourceGroupOwner with a value ending in @zeiss.com (example: firstname.lastname@zeiss.com)."
   }
 }
+
+variable "admin_password" {
+  description = "Admin password for the virtual machine. Must meet Azure's complexity requirements."
+  type        = string
+}

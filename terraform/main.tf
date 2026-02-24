@@ -63,6 +63,20 @@ resource "azurerm_network_security_rule" "allow_4008" {
 
 
 }
+# allow admin access to VM via SSH on port 22
+resource "azurerm_network_security_rule" "allow_ssh" {
+  name                        = "Allow-SSH"
+  priority                    = 1002
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  destination_port_range      = "22"
+  source_port_range           = "*"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.nsg.name
+}
 
 # create network interface
 
@@ -98,7 +112,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   depends_on = [azurerm_network_interface_security_group_association.nic_nsg]
 
-  admin_password = "YourPassword123!"
+  admin_password = var.admin_password
 
   disable_password_authentication = false
 
