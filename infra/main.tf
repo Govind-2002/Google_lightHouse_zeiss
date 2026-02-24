@@ -78,6 +78,21 @@ resource "azurerm_network_security_rule" "allow_ssh" {
   network_security_group_name = azurerm_network_security_group.nsg.name
 }
 
+#allow access to application on port 3000
+resource "azurerm_network_security_rule" "allow_3000" {
+  name                        = "Allow-3000"
+  priority                    = 1003
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  destination_port_range      = "3000"
+  source_port_range           = "*"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.nsg.name
+}
+
 # create network interface
 
 resource "azurerm_network_interface" "nic" {
@@ -123,7 +138,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 
-    custom_data = base64encode(file("${path.module}/install.sh"))
+  custom_data = base64encode(file("${path.module}/install.sh"))
 
 
   os_disk {
