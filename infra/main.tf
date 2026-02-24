@@ -123,6 +123,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 
+    custom_data = base64encode(file("${path.module}/install.sh"))
+
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
