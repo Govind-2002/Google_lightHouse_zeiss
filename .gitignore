@@ -1,0 +1,12 @@
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+**/*.tfvars.json
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
