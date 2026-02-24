@@ -79,7 +79,7 @@ resource "azurerm_network_security_rule" "allow_ssh" {
 }
 
 #allow access to application on port 3000
-resource "azurerm_network_security_rule" "allow_3000" {
+/*resource "azurerm_network_security_rule" "allow_3000" {
   name                        = "Allow-3000"
   priority                    = 1003
   direction                   = "Inbound"
@@ -91,7 +91,7 @@ resource "azurerm_network_security_rule" "allow_3000" {
   destination_address_prefix  = "*"
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.nsg.name
-}
+}*/
 
 # create network interface
 
