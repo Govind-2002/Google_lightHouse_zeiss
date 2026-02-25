@@ -14,6 +14,9 @@ LIGHTHOUSE_REPO_REF="master"
 apt-get update -y
 apt-get upgrade -y
 
+#install utilities
+apt-get install -y jq
+
 # -----------------------------
 # Install Docker + Compose
 # -----------------------------
