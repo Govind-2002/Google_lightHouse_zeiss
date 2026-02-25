@@ -138,7 +138,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 
-  custom_data = base64encode(file("${path.module}/install.sh"))
+  custom_data = base64encode(replace(file("${path.module}/install.sh"), "\r\n", "\n"))
 
 
   os_disk {

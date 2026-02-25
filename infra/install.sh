@@ -5,58 +5,116 @@ echo "Starting VM bootstrap..."
 
 export DEBIAN_FRONTEND=noninteractive
 
-LIGHTHOUSE_REPO_URL=${LIGHTHOUSE_REPO_URL:-"https://github.com/spotify/lighthouse-audit-service.git"}
-#BACKSTAGE_REPO_URL=${BACKSTAGE_REPO_URL:-""}
-#BACKSTAGE_DIR=${BACKSTAGE_DIR:-"backstage-app"}
+LIGHTHOUSE_REPO_URL="https://github.com/spotify/lighthouse-audit-service.git"
+LIGHTHOUSE_REPO_REF="master"
 
-# Update system
+# -----------------------------
+# System Update
+# -----------------------------
 apt-get update -y
 apt-get upgrade -y
 
-# Install dependencies
-apt-get install -y docker.io docker-compose git #curl ca-certificates
+# -----------------------------
+# Install Docker + Compose
+# -----------------------------
+apt-get install -y docker.io git
+apt-get install -y docker-compose-plugin || apt-get install -y docker-compose
 
-# Tooling needed for some Node native dependencies (e.g. isolated-vm)
-#apt-get install -y build-essential python3 python3-setuptools python-is-python3 make g++ pkg-config libatomic1
-
-# Install Node.js LTS (includes npm + corepack/yarn)
-# Note: Backstage's current dependency tree pulls in isolated-vm@6.x which requires newer V8 APIs.
-#curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-#apt-get install -y nodejs
-
-#corepack enable
-#corepack prepare yarn@stable --activate
-
-# Enable Docker
 systemctl enable docker
 systemctl start docker
 
-# Add azureuser to docker group
 usermod -aG docker azureuser
 
-# Move to home directory
+# -----------------------------
+# Move to Home
+# -----------------------------
 cd /home/azureuser
 
-# Clone Lighthouse Audit Service if not already cloned
-if [ ! -d "lighthouse-audit-service" ]; then
-  git clone "$LIGHTHOUSE_REPO_URL"
+# -----------------------------
+# Clone or Refresh Repo
+# -----------------------------
+if [ ! -d "lighthouse-audit-service/.git" ]; then
+  rm -rf lighthouse-audit-service
+  git clone --branch "$LIGHTHOUSE_REPO_REF" --single-branch "$LIGHTHOUSE_REPO_URL" lighthouse-audit-service
+else
+  git -C lighthouse-audit-service fetch --all --prune
+  git -C lighthouse-audit-service checkout "$LIGHTHOUSE_REPO_REF"
+  git -C lighthouse-audit-service reset --hard "origin/$LIGHTHOUSE_REPO_REF"
+  git -C lighthouse-audit-service clean -fdx
 fi
 
-# Clone Backstage if not already cloned
-#if [ ! -d "$BACKSTAGE_DIR" ]; then
- # if [ -z "$BACKSTAGE_REPO_URL" ]; then
-  #  echo "BACKSTAGE_REPO_URL is not set."
-  #  echo "Set it to your Backstage repo URL, e.g.:"
-  #  echo "  export BACKSTAGE_REPO_URL=https://github.com/<org>/<repo>.git"
-  #  echo "Or create a Backstage app manually (npx @backstage/create-app) and copy it into /home/azureuser/$BACKSTAGE_DIR."
-  #  exit 1
-#  fi
-#  git clone "$BACKSTAGE_REPO_URL" "$BACKSTAGE_DIR"
-#fi
+echo "Using commit: $(git -C lighthouse-audit-service rev-parse --short HEAD)"
 
+# -----------------------------
+# Overwrite Dockerfile (Stable Build)
+# -----------------------------
+cat <<EOF > lighthouse-audit-service/Dockerfile
+FROM node:22
+
+WORKDIR /app
+
+# Install build tools + Chromium dependencies
+RUN apt-get update && apt-get install -y \
+  python3 \
+  make \
+  g++ \
+  build-essential \
+  pkg-config \
+  libatomic1 \
+  ca-certificates \
+  fonts-liberation \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libatk1.0-0 \
+  libc6 \
+  libcairo2 \
+  libcups2 \
+  libdbus-1-3 \
+  libexpat1 \
+  libfontconfig1 \
+  libgbm1 \
+  libgcc1 \
+  libglib2.0-0 \
+  libgtk-3-0 \
+  libnspr4 \
+  libnss3 \
+  libpango-1.0-0 \
+  libpangocairo-1.0-0 \
+  libstdc++6 \
+  libx11-6 \
+  libx11-xcb1 \
+  libxcb1 \
+  libxcomposite1 \
+  libxcursor1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libxi6 \
+  libxrandr2 \
+  libxrender1 \
+  libxss1 \
+  libxtst6 \
+  lsb-release \
+  wget \
+  xdg-utils
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 4008
+
+CMD ["node", "cjs/run.js"]
+EOF
+
+# -----------------------------
 # Create docker-compose.yml
+# -----------------------------
 cat <<EOF > docker-compose.yml
-version: '3.8'
 
 services:
   postgres:
@@ -69,36 +127,49 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lighthouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   lighthouse:
     build: ./lighthouse-audit-service
     container_name: lighthouse
     ports:
-      - "4008:3003"
+      - "4008:4008"
     environment:
       PGHOST: postgres
       PGUSER: lighthouse
       PGPASSWORD: lighthouse
       PGDATABASE: lighthouse
-      PORT: 3003
+      LAS_PORT: 4008
+      LAS_HOST: 0.0.0.0
     depends_on:
-      - postgres
-    restart: unless-stopped
-
-  backstage:
-    build: ./${BACKSTAGE_DIR}
-    container_name: backstage
-    ports:
-      - "3000:3000"
-    depends_on:
-      - lighthouse
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   pgdata:
 EOF
 
-# Build and start containers
-docker-compose up -d --build
+# -----------------------------
+# Detect Compose Command
+# -----------------------------
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD="docker-compose"
+else
+  echo "ERROR: Docker Compose not found"
+  exit 1
+fi
 
-echo "Installation complete." 
+# -----------------------------
+# Build and Start
+# -----------------------------
+$COMPOSE_CMD down || true
+$COMPOSE_CMD up -d --build --force-recreate
+
+echo "Installation complete."
