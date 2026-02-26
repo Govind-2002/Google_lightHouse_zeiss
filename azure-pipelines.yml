@@ -10,42 +10,70 @@ variables:
 
 steps:
 
+# Install jq
 - script: |
     sudo apt-get update
     sudo apt-get install -y jq
   displayName: "Install dependencies"
 
+# Trigger Audit + Wait Until Completed
 - script: |
     echo "Triggering Lighthouse audit..."
 
+    # Step 1: Trigger audit
     RESPONSE=$(curl -s -X POST $(LIGHTHOUSE_URL)/v1/audits \
       -H "Content-Type: application/json" \
-      -d "{\"url\":\"$(TARGET_URL)\",\"awaitAuditCompleted\":true}")
+      -d "{\"url\":\"$(TARGET_URL)\"}")
 
-    echo "$RESPONSE" > full-report.json
+    echo "$RESPONSE" > initial-response.json
 
-    echo "Audit completed."
-    cat full-report.json
-  displayName: "Run Lighthouse Audit"
+    AUDIT_ID=$(jq -r '.id' initial-response.json)
+    echo "Audit ID: $AUDIT_ID"
 
+    # Step 2: Poll until completed
+    echo "Waiting for audit completion..."
+
+    while true; do
+      STATUS_RESPONSE=$(curl -s $(LIGHTHOUSE_URL)/v1/audits/$AUDIT_ID)
+      STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
+
+      echo "Current status: $STATUS"
+
+      if [ "$STATUS" = "COMPLETED" ]; then
+        echo "$STATUS_RESPONSE" > full-report.json
+        echo "Audit completed successfully."
+        break
+      fi
+
+      if [ "$STATUS" = "FAILED" ]; then
+        echo "Audit failed."
+        exit 1
+      fi
+
+      sleep 10
+    done
+  displayName: "Run Lighthouse Audit (Wait for Completion)"
+
+# Generate Summary JSON
 - script: |
+    echo "Generating summary..."
+
     jq '{
       id: .id,
       url: .url,
       status: .status,
       timeCreated: .timeCreated,
       timeCompleted: .timeCompleted,
-      categories: {
-        performance: { score: .report.categories.performance.score },
-        accessibility: { score: .report.categories.accessibility.score },
-        "best-practices": { score: .report.categories["best-practices"].score },
-        seo: { score: .report.categories.seo.score }
-      }
+      categories: (
+        .report.categories
+        | with_entries({ key: .key, value: { score: .value.score } })
+      )
     }' full-report.json > summary.json
 
     echo "Summary:"
     cat summary.json
   displayName: "Generate Summary"
 
+# Publish Artifact
 - publish: summary.json
   artifact: LighthouseReport
