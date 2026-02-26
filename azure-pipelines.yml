@@ -14,47 +14,23 @@ steps:
 - script: |
     sudo apt-get update
     sudo apt-get install -y jq
-  displayName: "Install dependencies"
+  displayName: "Install jq"
 
-# Trigger Audit + Wait Until Completed
+# Trigger Audit and Wait Automatically
 - script: |
-    echo "Triggering Lighthouse audit..."
+    echo "Triggering Lighthouse audit and waiting for completion..."
 
-    # Step 1: Trigger audit
     RESPONSE=$(curl -s -X POST $(LIGHTHOUSE_URL)/v1/audits \
       -H "Content-Type: application/json" \
-      -d "{\"url\":\"$(TARGET_URL)\"}")
+      -d "{\"url\":\"$(TARGET_URL)\",\"awaitAuditCompleted\":true}")
 
-    echo "$RESPONSE" > initial-response.json
+    echo "$RESPONSE" > full-report.json
 
-    AUDIT_ID=$(jq -r '.id' initial-response.json)
-    echo "Audit ID: $AUDIT_ID"
+    echo "Audit finished."
+    cat full-report.json
+  displayName: "Run Lighthouse Audit"
 
-    # Step 2: Poll until completed
-    echo "Waiting for audit completion..."
-
-    while true; do
-      STATUS_RESPONSE=$(curl -s $(LIGHTHOUSE_URL)/v1/audits/$AUDIT_ID)
-      STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
-
-      echo "Current status: $STATUS"
-
-      if [ "$STATUS" = "COMPLETED" ]; then
-        echo "$STATUS_RESPONSE" > full-report.json
-        echo "Audit completed successfully."
-        break
-      fi
-
-      if [ "$STATUS" = "FAILED" ]; then
-        echo "Audit failed."
-        exit 1
-      fi
-
-      sleep 10
-    done
-  displayName: "Run Lighthouse Audit (Wait for Completion)"
-
-# Generate Summary JSON
+# Generate Summary
 - script: |
     echo "Generating summary..."
 
