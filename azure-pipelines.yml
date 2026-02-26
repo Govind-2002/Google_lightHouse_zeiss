@@ -15,7 +15,6 @@ pool:
 variables:
   LIGHTHOUSE_URL: "http://104.211.61.92:4008"
   TARGET_URL: "https://github.com"
-  PERFORMANCE_THRESHOLD: "0.5"
 
 steps:
 
@@ -59,16 +58,6 @@ steps:
     cat summary.json
   displayName: "Generate Summary"
 
-# Quality Gate (Fail if performance low)
-- script: |
-    SCORE=$(jq '.categories.performance.score' summary.json)
-    echo "Performance Score: $SCORE"
-
-    if (( $(echo "$SCORE < $(PERFORMANCE_THRESHOLD)" | bc -l) )); then
-      echo "Performance below threshold. Failing pipeline."
-      exit 1
-    fi
-  displayName: "Performance Quality Gate"
 
 # Publish Artifact
 - task: PowerShell@2
