@@ -22,13 +22,21 @@ steps:
 
     RESPONSE=$(curl -s -X POST $(LIGHTHOUSE_URL)/v1/audits \
       -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
       -d "{\"url\":\"$(TARGET_URL)\",\"awaitAuditCompleted\":true}")
 
     echo "$RESPONSE" > full-report.json
 
-    echo "Audit finished."
+    echo "Raw response:"
     cat full-report.json
   displayName: "Run Lighthouse Audit"
+
+#validatig json
+- script: |
+    echo "Validating JSON..."
+
+    jq . full-report.json || { echo "Invalid JSON received"; exit 1; }
+  displayName: "Validate JSON"
 
 # Generate Summary
 - script: |
