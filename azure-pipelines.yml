@@ -16,20 +16,38 @@ steps:
     sudo apt-get install -y jq
   displayName: "Install jq"
 
-# Trigger Audit and Wait Automatically
 - script: |
-    echo "Triggering Lighthouse audit and waiting for completion..."
+    echo "Triggering Lighthouse audit..."
 
     RESPONSE=$(curl -s -X POST $(LIGHTHOUSE_URL)/v1/audits \
       -H "Content-Type: application/json" \
       -H "Accept: application/json" \
-      -d "{\"url\":\"$(TARGET_URL)\",\"awaitAuditCompleted\":true}")
+      -d "{\"url\":\"$(TARGET_URL)\"}")
 
-    echo "$RESPONSE" > full-report.json
+    echo "$RESPONSE"
 
-    echo "Raw response:"
+    AUDIT_ID=$(echo $RESPONSE | jq -r '.id')
+
+    echo "Audit ID: $AUDIT_ID"
+
+    echo "Waiting for audit to complete..."
+
+    STATUS="RUNNING"
+
+    while [ "$STATUS" = "RUNNING" ]; do
+      sleep 10
+
+      RESULT=$(curl -s $(LIGHTHOUSE_URL)/v1/audits/$AUDIT_ID)
+      STATUS=$(echo $RESULT | jq -r '.status')
+
+      echo "Current status: $STATUS"
+    done
+
+    echo "$RESULT" > full-report.json
+
+    echo "Final Report:"
     cat full-report.json
-  displayName: "Run Lighthouse Audit"
+  displayName: "Trigger + Wait for Lighthouse Audit"
 
 #validatig json
 - script: |
