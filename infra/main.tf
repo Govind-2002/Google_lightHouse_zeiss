@@ -113,6 +113,7 @@ resource "azurerm_network_interface_security_group_association" "nic_nsg" {
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
+
 # Create Virtual Machine
 
 resource "azurerm_linux_virtual_machine" "vm" {
