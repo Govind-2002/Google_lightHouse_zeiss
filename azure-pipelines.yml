@@ -19,34 +19,37 @@ steps:
 - script: |
     echo "Triggering Lighthouse audit..."
 
-    RESPONSE=$(curl -s -X POST $(LIGHTHOUSE_URL)/v1/audits \
+    RESPONSE=$(curl --fail --silent --show-error \
+      -X POST $(LIGHTHOUSE_URL)/v1/audits \
       -H "Content-Type: application/json" \
       -H "Accept: application/json" \
       -d "{\"url\":\"$(TARGET_URL)\"}")
 
     echo "$RESPONSE"
 
-    AUDIT_ID=$(echo $RESPONSE | jq -r '.id')
+    AUDIT_ID=$(echo "$RESPONSE" | jq -r '.id')
 
     echo "Audit ID: $AUDIT_ID"
-
-    echo "Waiting for audit to complete..."
 
     STATUS="RUNNING"
 
     while [ "$STATUS" = "RUNNING" ]; do
       sleep 10
 
-      RESULT=$(curl -s $(LIGHTHOUSE_URL)/v1/audits/$AUDIT_ID)
-      STATUS=$(echo $RESULT | jq -r '.status')
+      RESULT=$(curl --fail --silent --show-error \
+        -H "Accept: application/json" \
+        $(LIGHTHOUSE_URL)/v1/audits/$AUDIT_ID)
+
+      echo "$RESULT" | jq empty || { echo "Invalid JSON from API"; exit 1; }
+
+      STATUS=$(echo "$RESULT" | jq -r '.status')
 
       echo "Current status: $STATUS"
     done
 
     echo "$RESULT" > full-report.json
 
-    echo "Final Report:"
-    cat full-report.json
+    echo "Final Report saved."
   displayName: "Trigger + Wait for Lighthouse Audit"
 
 #validatig json
