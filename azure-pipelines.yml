@@ -1,0 +1,80 @@
+trigger:
+- main   # runs on merge to main
+
+#schedules:
+#- cron: "*/5 * * * *"   # every 5 minutes
+#  displayName: Nightly Lighthouse Audit
+#  branches:
+#    include:
+#    - main
+#  always: "true"
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  LIGHTHOUSE_URL: "http://104.211.61.92:4008"
+  TARGET_URL: "https://github.com"
+  PERFORMANCE_THRESHOLD: "0.5"
+
+steps:
+
+# Install jq + bc
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y jq bc
+  displayName: "Install dependencies"
+
+# Trigger Audit and wait for completion
+- script: |
+    echo "Triggering Lighthouse audit..."
+
+    RESPONSE=$(curl -s -X POST $(LIGHTHOUSE_URL)/v1/audits \
+      -H "Content-Type: application/json" \
+      -d "{\"url\":\"$(TARGET_URL)\",\"awaitAuditCompleted\":true}")
+
+    echo "$RESPONSE" > full-report.json
+
+    echo "Audit completed."
+    cat full-report.json
+  displayName: "Run Lighthouse Audit"
+
+# Generate Summary JSON
+- script: |
+    jq '{
+      id: .id,
+      url: .url,
+      status: .status,
+      timeCreated: .timeCreated,
+      timeCompleted: .timeCompleted,
+      categories: {
+        performance: { score: .report.categories.performance.score },
+        accessibility: { score: .report.categories.accessibility.score },
+        "best-practices": { score: .report.categories["best-practices"].score },
+        seo: { score: .report.categories.seo.score }
+      }
+    }' full-report.json > summary.json
+
+    echo "Summary:"
+    cat summary.json
+  displayName: "Generate Summary"
+
+# Quality Gate (Fail if performance low)
+- script: |
+    SCORE=$(jq '.categories.performance.score' summary.json)
+    echo "Performance Score: $SCORE"
+
+    if (( $(echo "$SCORE < $(PERFORMANCE_THRESHOLD)" | bc -l) )); then
+      echo "Performance below threshold. Failing pipeline."
+      exit 1
+    fi
+  displayName: "Performance Quality Gate"
+
+# Publish Artifact
+- task: PowerShell@2
+  displayName: "Publish Artifact"
+  inputs:
+    targetType: inline
+    script: |
+      Write-Host "Publishing summary.json as LighthouseReport artifact..."
+      Write-Host "##vso[artifact.upload containerfolder=LighthouseReport;artifactname=LighthouseReport]summary.json"
