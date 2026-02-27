@@ -8,7 +8,7 @@ schedules:
   branches:
     include:
       - main
-  always: true
+  always: "true"
 
 pool:
   vmImage: 'ubuntu-latest'
