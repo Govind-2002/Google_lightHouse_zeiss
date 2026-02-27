@@ -1,13 +1,14 @@
 trigger:
 - main
 
-schedules:
-- cron: "0 3 * * *"
-  displayName: Daily Lighthouse Audit
-  branches:
-    include:
-      - main
-  always: "true"
+
+#schedules:
+#- cron: "0 3 * * *"
+ # displayName: Daily Lighthouse Audit
+  #branches:
+   # include:
+    #  - main
+  #always: "true"
 
 pool:
   vmImage: 'ubuntu-latest'
