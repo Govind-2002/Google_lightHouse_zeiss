@@ -3,7 +3,7 @@ trigger:
 
 
 schedules:
-- cron: "7 8 * * *"
+- cron: "*/5 * * * *"
   displayName: Daily Lighthouse Audit
   branches:
     include:
