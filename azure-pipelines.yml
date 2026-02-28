@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/main/src/schemas/json/azure-pipelines.json
+# yaml-language-server:    $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/main/src/schemas/json/azure-pipelines.json
 
 
 trigger:
@@ -11,6 +11,8 @@ schedules:
     include:
       - lighthouse-setup
   always: true
+
+
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -88,7 +90,7 @@ steps:
     echo "Final Report saved."
   displayName: "Trigger + Wait for Lighthouse Audit"
 
-  
+
 #validatig json
 - script: |
     echo "Validating JSON..."
