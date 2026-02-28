@@ -1,0 +1,48 @@
+trigger: none   # manual only
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformVersion: '1.6.6'
+
+stages:
+- stage: Terraform
+  displayName: Deploy Infrastructure
+  jobs:
+  - job: Deploy
+    displayName: Terraform Apply
+    steps:
+
+    - task: TerraformInstaller@1
+      displayName: Install Terraform
+      inputs:
+        terraformVersion: $(terraformVersion)
+
+    - task: AzureCLI@2
+      displayName: Terraform Init, Plan, Apply
+      inputs:
+        azureSubscription: 'azure-service-connection'   # <-- your service connection name
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+
+          echo "Moving to infra directory..."
+          cd infra
+
+          echo "Initializing Terraform..."
+          terraform init
+
+          echo "Planning Terraform..."
+          terraform plan -out=tfplan \
+            -var="admin_password=$(admin_password)" \
+            -var='tags={
+              SbxResourceGroupOwner="aishwarya.panampilly@zeiss.com",
+              environment="lighthouse"
+            }'
+
+          echo "Applying Terraform..."
+          terraform apply -auto-approve tfplan
+
+          echo "Outputs:"
+          terraform output
