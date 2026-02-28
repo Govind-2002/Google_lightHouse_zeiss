@@ -5,8 +5,8 @@ trigger:
 - lighthouse-setup
 
 schedules:
-- cron: "*/1 * * * *"
-  displayName: Every 5 Min Lighthouse Audit
+- cron: "*/10 * * * *"
+  displayName: Every 10 Min Lighthouse Audit
   branches:
     include:
       - lighthouse-setup
