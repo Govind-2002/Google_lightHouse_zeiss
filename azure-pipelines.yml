@@ -1,14 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/azure-pipelines.json
 trigger:
 - main
 
 
 schedules:
 - cron: "*/5 * * * *"
-  displayName: Daily Lighthouse Audit
+  displayName: Every 5 Min Lighthouse Audit
   branches:
     include:
       - main
-  always: "true"
+  always: true
 
 pool:
   vmImage: 'ubuntu-latest'
