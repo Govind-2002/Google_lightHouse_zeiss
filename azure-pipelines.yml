@@ -30,28 +30,53 @@ steps:
 - script: |
     echo "Triggering Lighthouse audit..."
 
-    RESPONSE=$(curl --fail --silent --show-error \
+    echo "LIGHTHOUSE_URL: $(LIGHTHOUSE_URL)"
+    echo "TARGET_URL: $(TARGET_URL)"
+
+    echo "Checking connectivity..."
+    curl -v $(LIGHTHOUSE_URL) || echo "Base URL not reachable"
+
+    echo "Sending POST request..."
+
+    RESPONSE=$(curl -v \
       -X POST $(LIGHTHOUSE_URL)/v1/audits \
       -H "Content-Type: application/json" \
       -H "Accept: application/json" \
       -d "{\"url\":\"$(TARGET_URL)\"}")
 
+    echo "Raw RESPONSE:"
     echo "$RESPONSE"
+
+    if [ -z "$RESPONSE" ]; then
+      echo "ERROR: Empty response from Lighthouse API"
+      exit 1
+    fi
 
     AUDIT_ID=$(echo "$RESPONSE" | jq -r '.id')
 
     echo "Audit ID: $AUDIT_ID"
+
+    if [ "$AUDIT_ID" = "null" ]; then
+      echo "ERROR: Audit ID is null"
+      exit 1
+    fi
 
     STATUS="RUNNING"
 
     while [ "$STATUS" = "RUNNING" ]; do
       sleep 10
 
-      RESULT=$(curl --fail --silent --show-error \
+      RESULT=$(curl -v \
         -H "Accept: application/json" \
         $(LIGHTHOUSE_URL)/v1/audits/$AUDIT_ID)
 
-      echo "$RESULT" | jq empty || { echo "Invalid JSON from API"; exit 1; }
+      echo "Raw RESULT:"
+      echo "$RESULT"
+
+      if [ -z "$RESULT" ]; then
+        echo "ERROR: Empty result received"
+        exit 1
+      fi
 
       STATUS=$(echo "$RESULT" | jq -r '.status')
 
@@ -63,6 +88,7 @@ steps:
     echo "Final Report saved."
   displayName: "Trigger + Wait for Lighthouse Audit"
 
+  
 #validatig json
 - script: |
     echo "Validating JSON..."
