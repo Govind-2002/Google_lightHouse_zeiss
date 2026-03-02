@@ -1,16 +1,18 @@
-# yaml-language-server:    $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/main/src/schemas/json/azure-pipelines.json
+# yaml-language- server:    $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/main/src/schemas/json/azure-pipelines.json
 
 
 trigger:
 - lighthouse-setup
 
 schedules:
-- cron: "*/10 * * * *"
+- cron: "30 2 * * *"
   displayName: Every 10 Min Lighthouse Audit
   branches:
     include:
       - lighthouse-setup
   always: true
+
+
 
 
 
