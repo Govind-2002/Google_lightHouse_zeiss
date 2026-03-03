@@ -148,6 +148,7 @@ services:
       PGDATABASE: lighthouse
       LAS_PORT: 4008
       LAS_HOST: 0.0.0.0
+      LAS_CORS: "true"
     depends_on:
       postgres:
         condition: service_healthy
