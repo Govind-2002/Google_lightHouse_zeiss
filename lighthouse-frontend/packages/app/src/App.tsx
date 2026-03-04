@@ -8,25 +8,27 @@ import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import orgPlugin from '@backstage/plugin-org/alpha';
 import searchPlugin from '@backstage/plugin-search/alpha';
 import lighthousePlugin from '@backstage-community/plugin-lighthouse/alpha';
+import homePlugin from '@backstage/plugin-home/alpha';
 
 const lighthouseHome = lighthousePlugin.withOverrides({
   extensions: [
     lighthousePlugin.getExtension('page:lighthouse').override({
-      params: { path: '/' },
+      params: { path: '/lighthouse' },
     }),
   ],
 });
 
 const app = createApp({
   features: [
-    lighthouseHome,
-    catalogPlugin,
-    scaffolderPlugin,
-    techdocsPlugin,
-    apiDocsPlugin,
-    userSettingsPlugin,
+    homePlugin,          // homepage
+    catalogPlugin,       // catalog
+    apiDocsPlugin,       // APIs
+    techdocsPlugin,      // docs
+    scaffolderPlugin,    // create
+    searchPlugin,        // search
+    lighthouseHome,      // lighthouse
+    userSettingsPlugin,  // settings
     orgPlugin,
-    searchPlugin,
   ],
 });
 

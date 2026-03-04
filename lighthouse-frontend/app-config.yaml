@@ -1,7 +1,16 @@
 app:
   title: Scaffolded Backstage App
+  branding:
+    logo:
+      light: /Zeiss.png
+      dark: /Zeiss.png
+    icon: /Zeiss.png
   baseUrl: http://localhost:3000
   packages: all
+  extensions:
+    - page:home:
+        config:
+          path: /
 
 organization:
   name: My Company
@@ -12,11 +21,12 @@ backend:
     port: 7007
 
   auth:
+    dangerouslyDisableDefaultAuthPolicy: true
     keys:
       - secret: "super-secret-development-key"
 
   experimental:
-    disableAuth: true  # DEV ONLY
+    disableAuth: true
 
   cors:
     origin: http://localhost:3000
@@ -25,20 +35,25 @@ backend:
 
   database:
     client: better-sqlite3
-    connection: ':memory:'
+    connection:
+      directory: ./backstage-data
+
+
+proxy:
+  reviveConsumedRequestBodies: true
+  endpoints:
+    /lighthouse:
+      target: http://localhost:4008
+      changeOrigin: true
+      secure: false
+      credentials: dangerously-allow-unauthenticated
+
 
 integrations:
   github:
     - host: github.com
       token: ${GITHUB_TOKEN}
 
-# ✅ PROXY CONFIGURATION (IMPORTANT)
-proxy:
-  endpoints:
-    '/lighthouse':
-      target: http://localhost:4008
-      changeOrigin: true
-      secure: false
 
 techdocs:
   builder: local
@@ -47,11 +62,14 @@ techdocs:
   publisher:
     type: local
 
+
 auth:
   providers:
     guest: {}
 
+
 scaffolder: {}
+
 
 catalog:
   import:
@@ -74,10 +92,10 @@ catalog:
         - allow: [User, Group]
 
 
-
 permission:
   enabled: true
 
-# ✅ CHANGE THIS — DO NOT USE PUBLIC IP DIRECTLY
+
 lighthouse:
   baseUrl: /api/proxy/lighthouse
+
