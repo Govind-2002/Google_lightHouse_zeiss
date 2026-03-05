@@ -22,6 +22,18 @@ backend:
   baseUrl: http://localhost:7007
   listen:
     port: 7007
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
+    frame-src:
+      - 'self'
+      - http://localhost:4008 # The target of your lighthouse proxy
+      - http://localhost:7007 # The backend proxy itself
+    # frame-ancestors controls who is ALLOWED to embed the iframe
+    img-src: ["'self'", 'data:', 'http:', 'https:']
+    script-src: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+    style-src: ["'self'", "'unsafe-inline'"]
+    # ADD THIS LINE:
+    frame-ancestors: ["'self'", "http://localhost:3000"]
 
   auth:
    # dangerouslyDisableDefaultAuthPolicy: true
