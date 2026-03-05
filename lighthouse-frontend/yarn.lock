@@ -2685,6 +2685,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@backstage/plugin-auth@npm:^0.1.5":
+  version: 0.1.5
+  resolution: "@backstage/plugin-auth@npm:0.1.5"
+  dependencies:
+    "@backstage/core-components": "npm:^0.18.7"
+    "@backstage/errors": "npm:^1.2.7"
+    "@backstage/frontend-plugin-api": "npm:^0.14.0"
+    "@backstage/theme": "npm:^0.7.2"
+    "@material-ui/core": "npm:^4.12.2"
+    "@material-ui/icons": "npm:^4.9.1"
+    "@material-ui/lab": "npm:4.0.0-alpha.61"
+    react-use: "npm:^17.2.4"
+  peerDependencies:
+    "@types/react": ^17.0.0 || ^18.0.0
+    react: ^17.0.0 || ^18.0.0
+    react-dom: ^17.0.0 || ^18.0.0
+    react-router-dom: ^6.30.2
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/5a6e8ae667654a3219fdb72325a36bc9d0fe3c5aec34dcfaa64c6d83b7fc0df840c1eaa99b58de3c6e75e6d6d8db531080ad0f52c4ee6ca073c13e4ed9856856
+  languageName: node
+  linkType: hard
+
 "@backstage/plugin-bitbucket-cloud-common@npm:^0.3.7":
   version: 0.3.7
   resolution: "@backstage/plugin-bitbucket-cloud-common@npm:0.3.7"
@@ -14816,6 +14840,8 @@ __metadata:
     "@backstage/frontend-defaults": "npm:^0.4.0"
     "@backstage/integration-react": "npm:^1.2.15"
     "@backstage/plugin-api-docs": "npm:^0.13.4"
+    "@backstage/plugin-auth": "npm:^0.1.5"
+    "@backstage/plugin-auth-react": "npm:^0.1.24"
     "@backstage/plugin-catalog": "npm:^1.33.1"
     "@backstage/plugin-catalog-common": "npm:^1.1.8"
     "@backstage/plugin-catalog-graph": "npm:^0.5.7"

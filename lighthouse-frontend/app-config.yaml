@@ -1,5 +1,8 @@
+# yaml-language-server: $schema=https://backstage.io/schema/app-config.schema.json
+# Note: Schema validation is disabled due to connectivity issues. Uncomment the line above when connectivity is restored.
 app:
   title: Scaffolded Backstage App
+  signInPage: guest
   branding:
     logo:
       light: /Zeiss.png
@@ -21,12 +24,12 @@ backend:
     port: 7007
 
   auth:
-    dangerouslyDisableDefaultAuthPolicy: true
+   # dangerouslyDisableDefaultAuthPolicy: true
     keys:
       - secret: "super-secret-development-key"
 
-  experimental:
-    disableAuth: true
+  #experimental:
+  #  disableAuth: true
 
   cors:
     origin: http://localhost:3000
@@ -64,9 +67,10 @@ techdocs:
 
 
 auth:
+  environment: development
   providers:
     guest: {}
-
+     # dangerouslyAllowOutsideDevelopment: true
 
 scaffolder: {}
 
@@ -97,5 +101,5 @@ permission:
 
 
 lighthouse:
-  baseUrl: /api/proxy/lighthouse
+  baseUrl: http://localhost:7007/api/proxy/lighthouse
 
