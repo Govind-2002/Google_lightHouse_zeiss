@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lighthouse-audit-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lighthouse-audit-service
+  template:
+    metadata:
+      labels:
+        app: lighthouse-audit-service
+    spec:
+      # Uncomment if your Docker Hub repository is private.
+      # imagePullSecrets:
+      #   - name: dockerhub-pull-secret
+      containers:
+        - name: lighthouse-audit-service
+          image: aishjp/lighthouse-audit-service:20260309-aks1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4008
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_DB
+            - name: LAS_PORT
+              value: "4008"
+            - name: LAS_HOST
+              value: 0.0.0.0
+            - name: LAS_CORS
+              value: "true"
+          startupProbe:
+            tcpSocket:
+              port: 4008
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 4008
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 4008
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lighthouse-audit-service
+spec:
+  selector:
+    app: lighthouse-audit-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 4008
+  type: ClusterIP
