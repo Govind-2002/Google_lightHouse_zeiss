@@ -20,7 +20,7 @@ spec:
             - containerPort: 7007
           env:
             - name: BACKSTAGE_BASE_URL
-              value: http://20.103.52.125
+              value: https://20.103.52.125
             - name: APP_CONFIG_backend_auth_dangerouslyDisableDefaultAuthPolicy
               value: "true"
             - name: APP_CONFIG_auth_providers_guest_dangerouslyAllowOutsideDevelopment
