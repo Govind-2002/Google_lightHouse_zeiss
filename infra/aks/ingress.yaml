@@ -3,13 +3,9 @@ kind: Ingress
 metadata:
   name: backstage-ingress
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
-  tls:
-    - hosts:
-        - backstage.20.103.52.125.nip.io
-      secretName: backstage-tls
   rules:
     - http:
         paths:
@@ -22,15 +18,6 @@ spec:
                   number: 7007
     - host: backstage.20.103.52.125.nip.io
       http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: backstage
-                port:
-                  number: 7007
-      https:
         paths:
           - path: /
             pathType: Prefix
