@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/main/src/schemas/json/azure-pipelines.json
+
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  azureServiceConnection: azure-service-connection
+  aksResourceGroup: REPLACE_WITH_AKS_RESOURCE_GROUP
+  aksClusterName: aks-sre-peacemaker-dev
+  dockerHubRepository: REPLACE_WITH_DOCKERHUB_USER/lighthouse-audit-service
+  spotifyRepoUrl: https://github.com/spotify/lighthouse-audit-service.git
+  spotifyRepoRef: master
+
+stages:
+- stage: BuildAndDeploy
+  displayName: Build Push Deploy To AKS
+  jobs:
+  - job: build_push_deploy
+    displayName: Build image, push to Docker Hub, deploy to AKS
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: AKS credentials
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -euo pipefail
+          az aks get-credentials \
+            --resource-group "$(aksResourceGroup)" \
+            --name "$(aksClusterName)" \
+            --overwrite-existing
+
+    - script: |
+        set -euo pipefail
+
+        if [ -z "${DOCKERHUB_USERNAME:-}" ] || [ -z "${DOCKERHUB_TOKEN:-}" ]; then
+          echo "DOCKERHUB_USERNAME/DOCKERHUB_TOKEN must be set as secret pipeline variables."
+          exit 1
+        fi
+
+        IMAGE_TAG="$(Build.BuildId)"
+        IMAGE_NAME="$(dockerHubRepository):${IMAGE_TAG}"
+
+        echo "Cloning Lighthouse source..."
+        rm -rf lighthouse-audit-service
+        git clone --branch "$(spotifyRepoRef)" --single-branch "$(spotifyRepoUrl)" lighthouse-audit-service
+
+        echo "Docker login..."
+        echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+        echo "Building image ${IMAGE_NAME}..."
+        docker build \
+          -f "$(Build.SourcesDirectory)/infra/aks/lighthouse-audit-service.Dockerfile" \
+          -t "$IMAGE_NAME" \
+          lighthouse-audit-service
+
+        echo "Pushing image..."
+        docker push "$IMAGE_NAME"
+
+        echo "##vso[task.setvariable variable=IMAGE_NAME]$IMAGE_NAME"
+      displayName: Build and push Docker Hub image
+      env:
+        DOCKERHUB_USERNAME: $(DOCKERHUB_USERNAME)
+        DOCKERHUB_TOKEN: $(DOCKERHUB_TOKEN)
+
+    - script: |
+        set -euo pipefail
+
+        if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+          echo "POSTGRES_PASSWORD must be set as a secret pipeline variable."
+          exit 1
+        fi
+
+        cd "$(Build.SourcesDirectory)/infra/aks"
+
+        # Ensure namespace exists first.
+        kubectl apply -f namespace.yaml
+
+        # Create or update runtime DB secret from pipeline secrets.
+        kubectl -n lighthouse create secret generic lighthouse-secrets \
+          --from-literal=POSTGRES_USER=lighthouse \
+          --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+          --from-literal=POSTGRES_DB=lighthouse \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        # Optional: Docker Hub pull secret for private repositories.
+        if [ -n "${DOCKERHUB_EMAIL:-}" ]; then
+          kubectl -n lighthouse create secret docker-registry dockerhub-pull-secret \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username="$DOCKERHUB_USERNAME" \
+            --docker-password="$DOCKERHUB_TOKEN" \
+            --docker-email="$DOCKERHUB_EMAIL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+        fi
+
+        sed -i "s|REPLACE_WITH_DOCKERHUB_IMAGE|$(IMAGE_NAME)|g" lighthouse.yaml
+
+        kubectl -n lighthouse apply -f postgres.yaml
+        kubectl -n lighthouse apply -f lighthouse.yaml
+
+        kubectl rollout status deployment/postgres -n lighthouse --timeout=300s
+        kubectl rollout status deployment/lighthouse-audit-service -n lighthouse --timeout=300s
+        kubectl get svc lighthouse-audit-service -n lighthouse
+      displayName: Deploy manifests to AKS
+      env:
+        DOCKERHUB_USERNAME: $(DOCKERHUB_USERNAME)
+        DOCKERHUB_TOKEN: $(DOCKERHUB_TOKEN)
+        DOCKERHUB_EMAIL: $(DOCKERHUB_EMAIL)
+        POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)

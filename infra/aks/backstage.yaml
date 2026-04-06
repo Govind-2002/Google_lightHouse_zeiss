@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+    spec:
+      containers:
+        - name: backstage
+          image: aishjp/backstage:20260309-aks4
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7007
+          env:
+            - name: BACKSTAGE_BASE_URL
+              value: https://20.103.52.125
+            - name: APP_CONFIG_backend_auth_dangerouslyDisableDefaultAuthPolicy
+              value: "true"
+            - name: APP_CONFIG_auth_providers_guest_dangerouslyAllowOutsideDevelopment
+              value: "true"
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: backstage
+          readinessProbe:
+            tcpSocket:
+              port: 7007
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 7007
+            initialDelaySeconds: 40
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 300m
+              memory: 512Mi
+            limits:
+              cpu: 2
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage
+spec:
+  selector:
+    app: backstage
+  ports:
+    - name: http
+      port: 7007
+      targetPort: 7007
+  type: ClusterIP
