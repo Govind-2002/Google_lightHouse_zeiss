@@ -11,6 +11,7 @@ variables:
   aksResourceGroup: REPLACE_WITH_AKS_RESOURCE_GROUP
   aksClusterName: aks-sre-peacemaker-dev
   dockerHubRepository: REPLACE_WITH_DOCKERHUB_USER/lighthouse-audit-service
+  dockerHubBackstageRepo: REPLACE_WITH_DOCKERHUB_USER/backstage
   spotifyRepoUrl: https://github.com/spotify/lighthouse-audit-service.git
   spotifyRepoRef: master
 
@@ -72,6 +73,42 @@ stages:
     - script: |
         set -euo pipefail
 
+        IMAGE_TAG="$(Build.BuildId)"
+        BACKSTAGE_IMAGE="$(dockerHubBackstageRepo):${IMAGE_TAG}"
+
+        echo "Docker login..."
+        echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+        echo "Building Backstage image ${BACKSTAGE_IMAGE}..."
+        docker build \
+          -f "$(Build.SourcesDirectory)/infra/aks/backstage.Dockerfile" \
+          -t "$BACKSTAGE_IMAGE" \
+          "$(Build.SourcesDirectory)"
+
+        echo "Pushing image..."
+        docker push "$BACKSTAGE_IMAGE"
+
+        echo "##vso[task.setvariable variable=BACKSTAGE_IMAGE]$BACKSTAGE_IMAGE"
+      displayName: Build and push Backstage image
+      env:
+        DOCKERHUB_USERNAME: $(DOCKERHUB_USERNAME)
+        DOCKERHUB_TOKEN: $(DOCKERHUB_TOKEN)
+
+    - script: |
+        set -euo pipefail
+        echo "Installing NGINX Ingress Controller (if not present)..."
+        if ! kubectl get namespace ingress-nginx >/dev/null 2>&1; then
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/cloud/deploy.yaml
+          echo "Waiting for ingress controller to be ready..."
+          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
+        else
+          echo "NGINX Ingress Controller already installed"
+        fi
+      displayName: Ensure NGINX Ingress Controller
+
+    - script: |
+        set -euo pipefail
+
         if [ -z "${POSTGRES_PASSWORD:-}" ]; then
           echo "POSTGRES_PASSWORD must be set as a secret pipeline variable."
           exit 1
@@ -101,12 +138,22 @@ stages:
 
         sed -i "s|REPLACE_WITH_DOCKERHUB_IMAGE|$(IMAGE_NAME)|g" lighthouse.yaml
 
+        # Inject Backstage image into manifest.
+        sed -i "s|aishjp/backstage:[^ ]*|$(BACKSTAGE_IMAGE)|g" backstage.yaml
+
         kubectl -n lighthouse apply -f postgres.yaml
         kubectl -n lighthouse apply -f lighthouse.yaml
+        kubectl -n lighthouse apply -f backstage.yaml
+        kubectl -n lighthouse apply -f ingress.yaml
 
         kubectl rollout status deployment/postgres -n lighthouse --timeout=300s
         kubectl rollout status deployment/lighthouse-audit-service -n lighthouse --timeout=300s
-        kubectl get svc lighthouse-audit-service -n lighthouse
+        kubectl rollout status deployment/backstage -n lighthouse --timeout=300s
+
+        echo "--- Services ---"
+        kubectl get svc -n lighthouse
+        echo "--- Ingress ---"
+        kubectl get ingress -n lighthouse
       displayName: Deploy manifests to AKS
       env:
         DOCKERHUB_USERNAME: $(DOCKERHUB_USERNAME)

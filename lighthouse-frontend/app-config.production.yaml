@@ -19,7 +19,7 @@ backend:
   csp:
     connect-src: ["'self'", "http:", "https:"]
     frame-src: ["'self'", "http:", "https:"]
-    frame-ancestors: ["'self'", "https://20.103.52.125", "http://20.103.52.125"]
+    frame-ancestors: ["'self'", "http:", "https:"]
     img-src: ["'self'", "data:", "http:", "https:"]
     script-src: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
     style-src: ["'self'", "'unsafe-inline'"]

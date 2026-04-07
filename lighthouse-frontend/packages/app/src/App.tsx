@@ -1,4 +1,6 @@
 import { createApp } from '@backstage/frontend-defaults';
+import appPlugin from '@backstage/plugin-app';
+import { beyondAppTheme } from './theme';
 
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import scaffolderPlugin from '@backstage/plugin-scaffolder/alpha';
@@ -18,8 +20,17 @@ const lighthouseHome = lighthousePlugin.withOverrides({
   ],
 });
 
+const themedApp = appPlugin.withOverrides({
+  extensions: [
+    appPlugin.getExtension('theme:app/light').override({
+      params: { theme: beyondAppTheme },
+    }),
+  ],
+});
+
 const app = createApp({
   features: [
+    themedApp,           // app with custom theme
     homePlugin,          // homepage
     catalogPlugin,       // catalog
     apiDocsPlugin,       // APIs

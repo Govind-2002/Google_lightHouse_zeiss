@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lighthouse
+      POSTGRES_PASSWORD: lighthouse
+      POSTGRES_DB: lighthouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  lighthouse-audit-service:
+    image: aishjp/lighthouse-audit-service:20260309-aks1
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: lighthouse
+      PGPASSWORD: lighthouse
+      PGDATABASE: lighthouse
+      LAS_PORT: "4008"
+      LAS_HOST: "0.0.0.0"
+      LAS_CORS: "true"
+    ports:
+      - "4008:4008"
+
+volumes:
+  pgdata:

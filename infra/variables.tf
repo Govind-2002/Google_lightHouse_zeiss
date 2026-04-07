@@ -41,4 +41,31 @@ variable "tags" {
 variable "admin_password" {
   description = "Admin password for the virtual machine. Must meet Azure's complexity requirements."
   type        = string
+  sensitive   = true
+}
+
+# ── AKS variables ──────────────────────────────────────────────────────────────
+
+variable "aks_cluster_name" {
+  description = "Name of the AKS cluster."
+  type        = string
+  default     = "aks-sre-peacemaker-dev"
+}
+
+variable "aks_dns_prefix" {
+  description = "DNS prefix for the AKS cluster."
+  type        = string
+  default     = "lighthouse-aks"
+}
+
+variable "aks_node_count" {
+  description = "Number of nodes in the default node pool."
+  type        = number
+  default     = 2
+}
+
+variable "aks_node_vm_size" {
+  description = "VM size for AKS node pool."
+  type        = string
+  default     = "Standard_B4ms"
 }

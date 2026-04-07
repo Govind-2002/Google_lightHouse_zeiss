@@ -12,6 +12,36 @@ spec:
       labels:
         app: backstage
     spec:
+      initContainers:
+        - name: create-backstage-db
+          image: postgres:15
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -p 5432 -U "$POSTGRES_USER"; do
+                echo "Waiting for postgres…"; sleep 3
+              done
+              PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" -d "$PGDATABASE" -tc \
+                "SELECT 1 FROM pg_database WHERE datname = 'backstage'" | grep -q 1 || \
+              PGPASSWORD="$POSTGRES_PASSWORD" createdb -h postgres -U "$POSTGRES_USER" backstage
+              echo "backstage database ready"
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: lighthouse-secrets
+                  key: POSTGRES_DB
       containers:
         - name: backstage
           image: aishjp/backstage:20260309-aks4
@@ -20,7 +50,7 @@ spec:
             - containerPort: 7007
           env:
             - name: BACKSTAGE_BASE_URL
-              value: https://20.103.52.125
+              value: http://backstage.20.103.52.125.nip.io
             - name: APP_CONFIG_backend_auth_dangerouslyDisableDefaultAuthPolicy
               value: "true"
             - name: APP_CONFIG_auth_providers_guest_dangerouslyAllowOutsideDevelopment
@@ -41,6 +71,8 @@ spec:
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               value: backstage
+            - name: NODE_ENV
+              value: production
           readinessProbe:
             tcpSocket:
               port: 7007
