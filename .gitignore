@@ -25,3 +25,4 @@ terraform.rc
 # Local dev artifacts
 .tmp-lighthouse-audit-service/
 *.sqlite
+.tmp/

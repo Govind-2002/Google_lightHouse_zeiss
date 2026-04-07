@@ -9,11 +9,6 @@ app:
       dark: /Zeiss.png
     icon: /Zeiss.png
   baseUrl: http://localhost:3000
-  packages: all
-  extensions:
-    - page:home:
-        config:
-          path: /
 
 organization:
   name: My Company
