@@ -21,3 +21,7 @@ override.tf.json
 # CLI configuration
 .terraformrc
 terraform.rc
+
+# Local dev artifacts
+.tmp-lighthouse-audit-service/
+*.sqlite
