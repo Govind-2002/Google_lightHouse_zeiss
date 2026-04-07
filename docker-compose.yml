@@ -14,7 +14,9 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   lighthouse-audit-service:
-    image: aishjp/lighthouse-audit-service:20260309-aks1
+    build:
+      context: .
+      dockerfile: lighthouse-audit-service-patched.Dockerfile
     restart: unless-stopped
     depends_on:
       - postgres
