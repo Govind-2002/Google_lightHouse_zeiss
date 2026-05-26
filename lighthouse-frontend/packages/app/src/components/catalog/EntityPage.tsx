@@ -57,6 +57,11 @@ import {
   EntityKubernetesContent,
   isKubernetesAvailable,
 } from '@backstage/plugin-kubernetes';
+import {
+  EntityLighthouseContent,
+  EntityLastLighthouseAuditCard,
+  isLighthouseAvailable,
+} from '@backstage-community/plugin-lighthouse';
 
 const techdocsContent = (
   <EntityTechdocsContent>
@@ -124,6 +129,14 @@ const overviewContent = (
     <Grid item md={6} xs={12}>
       <EntityCatalogGraphCard variant="gridItem" height={400} />
     </Grid>
+
+    <EntitySwitch>
+      <EntitySwitch.Case if={isLighthouseAvailable}>
+        <Grid item md={6}>
+          <EntityLastLighthouseAuditCard variant="gridItem" />
+        </Grid>
+      </EntitySwitch.Case>
+    </EntitySwitch>
 
     <Grid item md={4} xs={12}>
       <EntityLinksCard />
@@ -207,6 +220,10 @@ const websiteEntityPage = (
           <EntityDependsOnResourcesCard variant="gridItem" />
         </Grid>
       </Grid>
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/lighthouse" title="Lighthouse">
+      <EntityLighthouseContent />
     </EntityLayout.Route>
 
     <EntityLayout.Route path="/docs" title="Docs">

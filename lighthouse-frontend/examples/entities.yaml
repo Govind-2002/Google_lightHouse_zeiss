@@ -12,6 +12,8 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: example-website
+  annotations:
+    lighthouse.com/website-url: https://backstage.io
 spec:
   type: website
   lifecycle: experimental

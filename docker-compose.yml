@@ -29,6 +29,7 @@ services:
       LAS_PORT: "4008"
       LAS_HOST: "0.0.0.0"
       LAS_CORS: "true"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
     ports:
       - "4008:4008"
 

@@ -25,7 +25,16 @@ backend:
       - http://localhost:7007 # The backend proxy itself
     # frame-ancestors controls who is ALLOWED to embed the iframe
     img-src: ["'self'", 'data:', 'http:', 'https:']
-    script-src: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+    # SHA-256 hashes for inline scripts (config block + webpack HMR scripts)
+    # WARNING: These hashes may change on code changes/rebuilds. Regenerate from browser console CSP errors if scripts are blocked.
+    script-src:
+      - "'self'"
+      - "'sha256-+E/KHfj8IdSay+Ez980NOvGxcqajUU+JIrfn06kC1FY='"
+      - "'sha256-OD55afXeFbJbYi1JLMlSZHYzzmyI6FeWJm0/vsPcNj4='"
+      - "'sha256-MASBWvXmiQEwM/SFNSCKHxGIpo6AQHKEE2FkafmIDJw='"
+      - "'sha256-TPPz6zUeSHBWLcT8iTaj5ZhZC8qH8Szzx8qbeik9ca0='"
+      - "'unsafe-eval'"
+    # unsafe-inline required for style-src: MUI/Emotion injects inline styles dynamically at runtime
     style-src: ["'self'", "'unsafe-inline'"]
     # ADD THIS LINE:
     frame-ancestors: ["'self'", "http://localhost:3000"]
