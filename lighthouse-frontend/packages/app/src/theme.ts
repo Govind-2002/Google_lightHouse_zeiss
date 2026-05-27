@@ -33,6 +33,15 @@ export const beyondTheme: UnifiedTheme = createUnifiedTheme({
       },
     },
   },
+  components: {
+    BackstageHeader: {
+      styleOverrides: {
+        header: {
+          boxSizing: 'border-box',
+        },
+      },
+    },
+  },
   defaultPageTheme: 'light',
   pageTheme: {
     ...defaultLightTheme?.getPageTheme,

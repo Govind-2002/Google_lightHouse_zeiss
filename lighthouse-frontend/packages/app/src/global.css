@@ -1,0 +1,10 @@
+/* Fix horizontal overflow: Backstage sidebar and header use content-box sizing,
+   causing their padding to be added to 100% width and overflow the viewport. */
+
+[class*="BackstageSidebarPage-root"] {
+  box-sizing: border-box !important;
+}
+
+[class*="BackstageHeader-header"] {
+  box-sizing: border-box !important;
+}
